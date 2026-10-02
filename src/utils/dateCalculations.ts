@@ -1,42 +1,43 @@
 import { VaccineFrequencyUnit, VaccineUrgency } from '../types/pet';
 
 /**
- * UTILIDADES DE CÁLCULO DE FECHAS Y PRÓXIMAS DOSIS
- * 
- * ATENCIÓN: El manejo de fechas en JavaScript es propenso a errores sutiles.
- * En cada función se documentan las trampas habituales donde los desarrolladores
- * suelen equivocarse (zonas horarias, mutaciones y desbordamiento de meses).
+ * UTILIDADES ROBUSTAS DE CÁLCULO DE FECHAS
+ * Con validaciones defensivas contra valores nulos, fechas inválidas y desbordes.
  */
 
 /**
  * Convierte un string 'YYYY-MM-DD' a un objeto Date en HORA LOCAL.
- * 
- * ⚠️ TRAMPA HABITUAL:
- * Hacer `new Date("2026-10-02")` se interpreta por estándar como UTC a medianoche.
- * En países de habla hispana (ej: Argentina UTC-3, México UTC-6, Colombia UTC-5),
- * al consultar getMonth() o getDate() se obtiene el DÍA ANTERIOR (ej. 2026-10-01 a las 21:00).
- * Para evitar este error, separamos las partes año, mes y día de forma explícita.
+ * Valida formato estricto y valores numéricos para prevenir crashes por 'Invalid Date'.
  */
 export function parseLocalDate(dateString: string): Date {
-  if (!dateString) return new Date();
-  
-  const [yearStr, monthStr, dayStr] = dateString.split('-');
-  const year = parseInt(yearStr, 10);
-  const monthIndex = parseInt(monthStr, 10) - 1; // ⚠️ En JS los meses van de 0 a 11
-  const day = parseInt(dayStr, 10);
+  if (!dateString || typeof dateString !== 'string') {
+    return new Date();
+  }
 
-  // Instanciamos con año, mes, día exactos en la zona horaria del usuario
-  return new Date(year, monthIndex, day, 0, 0, 0, 0);
+  const parts = dateString.trim().split('-');
+  if (parts.length !== 3) {
+    return new Date();
+  }
+
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+
+  if (isNaN(year) || isNaN(month) || isNaN(day) || year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return new Date();
+  }
+
+  const parsed = new Date(year, month - 1, day, 0, 0, 0, 0);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
 /**
  * Formatea una fecha local a formato 'YYYY-MM-DD' para inputs <input type="date">.
- * 
- * ⚠️ TRAMPA HABITUAL:
- * Usar `date.toISOString().split('T')[0]` convierte a UTC, volviendo a cambiar
- * la fecha visible por el día anterior si es de noche.
  */
 export function formatLocalDateToInput(date: Date): string {
+  if (!date || isNaN(date.getTime())) {
+    date = new Date();
+  }
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -45,31 +46,36 @@ export function formatLocalDateToInput(date: Date): string {
 
 /**
  * Formatea una fecha a formato legible en español (ej: "15 de oct. de 2026").
+ * Nunca arroja RangeError ante fechas corruptas.
  */
 export function formatReadableDate(dateString: string): string {
   if (!dateString) return 'Sin fecha';
   try {
     const date = parseLocalDate(dateString);
+    if (isNaN(date.getTime())) return 'Fecha inválida';
     return date.toLocaleDateString('es-ES', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
   } catch {
-    return dateString;
+    return 'Fecha no disponible';
   }
 }
 
 /**
- * FUNCIÓN 2 REQUERIDA: Calcular la fecha de la próxima dosis.
- * 
- * Toma la fecha de aplicación y el intervalo configurado (meses, días o años).
- * 
- * ⚠️ TRAMPA HABITUAL:
- * 1. Mutar el objeto Date original (en JS los métodos como setMonth mutan la instancia).
- * 2. Overflow de fin de mes: Si aplicas una vacuna el 31 de marzo y sumas 1 mes,
- *    abril solo tiene 30 días. Un simple `date.setMonth(date.getMonth() + 1)` saltará al 1 de mayo!
- *    Aquí verificamos si el día resultante cambió y lo ajustamos al último día del mes correspondiente.
+ * Valida si una fecha ingresada es futura con respecto a hoy a medianoche.
+ */
+export function isFutureDate(dateString: string): boolean {
+  if (!dateString) return false;
+  const target = parseLocalDate(dateString);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return target.getTime() > today.getTime();
+}
+
+/**
+ * Calcula la fecha de la próxima dosis con protección de fin de mes y años bisiestos.
  */
 export function calculateNextDoseDate(
   applicationDateStr: string,
@@ -77,33 +83,28 @@ export function calculateNextDoseDate(
   intervalUnit: VaccineFrequencyUnit
 ): string {
   const baseDate = parseLocalDate(applicationDateStr);
-  const targetDate = new Date(baseDate.getTime()); // Clonamos para no mutar
+  const targetDate = new Date(baseDate.getTime());
 
+  // Sanitizar intervalo (mínimo 1 día/mes/año, máximo 365)
+  const safeInterval = Math.max(1, Math.min(365, Number(intervalValue) || 12));
   const originalDay = baseDate.getDate();
 
   switch (intervalUnit) {
     case 'dias': {
-      targetDate.setDate(targetDate.getDate() + intervalValue);
+      targetDate.setDate(targetDate.getDate() + safeInterval);
       break;
     }
     case 'anios': {
-      // Convertimos años a meses para reutilizar la lógica segura de fin de mes (ej. 29 de feb en bisiestos)
-      const totalMonths = intervalValue * 12;
+      const totalMonths = safeInterval * 12;
       targetDate.setMonth(targetDate.getMonth() + totalMonths);
-      
-      // Control de desbordamiento (ej: 29 de febrero sumado 1 año)
       if (targetDate.getDate() !== originalDay) {
-        // Establecemos al último día del mes previo al desborde
         targetDate.setDate(0);
       }
       break;
     }
     case 'meses':
     default: {
-      targetDate.setMonth(targetDate.getMonth() + intervalValue);
-
-      // Si el día del mes cambió (ej. de 31 a 1 o 2 por meses más cortos),
-      // forzamos al último día válido del mes al que queríamos ir.
+      targetDate.setMonth(targetDate.getMonth() + safeInterval);
       if (targetDate.getDate() !== originalDay) {
         targetDate.setDate(0);
       }
@@ -115,16 +116,7 @@ export function calculateNextDoseDate(
 }
 
 /**
- * Calcula los días restantes hasta la próxima dosis con respecto a HOY.
- * Retorna:
- * - Número positivo: faltan N días
- * - 0: vence hoy
- * - Número negativo: vencida hace N días
- * 
- * ⚠️ TRAMPA HABITUAL:
- * Restar fechas con horas arbitrarias (ej: 14:30 vs 09:00) produce decimales
- * y puede cambiar el resultado en +/- 1 día según la hora en que el usuario abra la app.
- * Ambas fechas deben normalizarse a medianoche (00:00:00.000).
+ * Calcula los días restantes normalizando ambas fechas a medianoche.
  */
 export function getDaysRemaining(nextDoseDateStr: string): number {
   const today = new Date();
@@ -135,14 +127,14 @@ export function getDaysRemaining(nextDoseDateStr: string): number {
 
   const diffTimeMs = nextDose.getTime() - today.getTime();
   const diffDays = Math.round(diffTimeMs / (1000 * 60 * 60 * 24));
-  return diffDays;
+  return isNaN(diffDays) ? 0 : diffDays;
 }
 
 /**
- * Determina el estado de urgencia de la vacuna:
- * - 'vencida': si los días restantes son menores a 0
- * - 'por_vencer': si vence hoy o dentro de los próximos 30 días (0 a 30)
- * - 'al_dia': si faltan más de 30 días
+ * Determina el estado de urgencia:
+ * - 'vencida': días restantes < 0
+ * - 'por_vencer': días entre 0 y 30
+ * - 'al_dia': más de 30 días
  */
 export function getVaccineUrgency(nextDoseDateStr: string): VaccineUrgency {
   const days = getDaysRemaining(nextDoseDateStr);
@@ -152,10 +144,10 @@ export function getVaccineUrgency(nextDoseDateStr: string): VaccineUrgency {
 }
 
 /**
- * Devuelve un texto legible para el usuario sobre el tiempo restante.
- * Ej: "Venció hace 12 días", "Vence hoy", "Vence en 5 días", "En 8 meses"
+ * Texto legible del conteo de días.
  */
 export function getRemainingDaysLabel(days: number): string {
+  if (isNaN(days)) return 'Fecha a confirmar';
   if (days < 0) {
     const absDays = Math.abs(days);
     if (absDays === 1) return 'Venció ayer';

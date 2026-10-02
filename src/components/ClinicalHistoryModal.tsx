@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pet, ClinicalRecord, ClinicalRecordType } from '../types/pet';
-import { formatLocalDateToInput, formatReadableDate } from '../utils/dateCalculations';
+import { formatLocalDateToInput, formatReadableDate, isFutureDate } from '../utils/dateCalculations';
 import {
   X,
   Plus,
@@ -52,6 +52,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
   const [selectedType, setSelectedType] = useState<string>('todos');
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const todayStr = formatLocalDateToInput(new Date());
   const [date, setDate] = useState(todayStr);
@@ -99,31 +100,52 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
     setFollowUpDate('');
     setFormError('');
     setIsAddingNew(false);
+    setIsSubmitting(false);
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) {
+    if (isSubmitting) return;
+
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
       setFormError('Por favor, indica el motivo o título de la consulta.');
       return;
     }
 
-    if (!diagnosisNotes.trim()) {
+    const trimmedNotes = diagnosisNotes.trim();
+    if (!trimmedNotes) {
       setFormError('Por favor, escribe las observaciones o diagnóstico del veterinario.');
       return;
     }
+
+    if (isFutureDate(date)) {
+      setFormError('La fecha de la visita no puede ser futura.');
+      return;
+    }
+
+    // Normalizar coma a punto en el peso (Bug 7)
+    let parsedWeight: number | undefined = undefined;
+    if (weightKg && weightKg.trim() !== '') {
+      const normalized = parseFloat(weightKg.replace(',', '.'));
+      if (!isNaN(normalized) && normalized > 0 && normalized <= 200) {
+        parsedWeight = Math.round(normalized * 100) / 100;
+      }
+    }
+
+    setIsSubmitting(true);
 
     const newRecord: ClinicalRecord = {
       id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       date: date || todayStr,
       type,
-      title: title.trim(),
-      veterinarian: veterinarian.trim() || undefined,
-      clinic: clinic.trim() || undefined,
-      weightKg: weightKg ? parseFloat(weightKg) : undefined,
-      diagnosisNotes: diagnosisNotes.trim(),
-      treatment: treatment.trim() || undefined,
+      title: trimmedTitle.substring(0, 100),
+      veterinarian: veterinarian.trim().substring(0, 80) || undefined,
+      clinic: clinic.trim().substring(0, 80) || undefined,
+      weightKg: parsedWeight,
+      diagnosisNotes: trimmedNotes.substring(0, 600),
+      treatment: treatment.trim().substring(0, 250) || undefined,
       followUpDate: followUpDate || undefined,
     };
 
@@ -141,7 +163,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
             <span className="text-3xl">{pet.species === 'perro' ? '🐶' : pet.species === 'gato' ? '🐱' : '🐾'}</span>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-black text-slate-950 leading-tight">
+                <h2 className="text-xl font-black text-slate-950 leading-tight break-all">
                   Historial de {pet.name}
                 </h2>
                 <span className="text-base font-bold px-2.5 py-0.5 rounded-lg bg-slate-200 text-slate-900 border border-slate-400">
@@ -173,6 +195,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                 <Search className="w-5 h-5 text-slate-600 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
+                  maxLength={50}
                   aria-label="Buscar en historial clínico"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -181,7 +204,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                 />
               </div>
 
-              {/* ÚNICO BOTÓN PRINCIPAL EN LA VISTA DE LISTA */}
               <button
                 onClick={() => setIsAddingNew(true)}
                 className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-base font-black transition-colors shrink-0 shadow-md min-h-[48px]"
@@ -226,13 +248,11 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
         {/* Contenido con Scroll: Formulario o Línea de Tiempo */}
         <div className="overflow-y-auto p-4 sm:p-6 flex-1">
           {isAddingNew ? (
-            /* Formulario con ETIQUETAS VISIBLES EN TODOS LOS CAMPOS */
             <form onSubmit={handleSave} className="space-y-4">
               <div className="flex items-center justify-between pb-2 border-b-2 border-slate-200">
                 <h3 className="text-lg font-black text-slate-950">
                   Nueva entrada clínica
                 </h3>
-                {/* Botón secundario para volver */}
                 <button
                   type="button"
                   onClick={() => setIsAddingNew(false)}
@@ -242,7 +262,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                 </button>
               </div>
 
-              {/* Mensaje de error sin palabras técnicas */}
               {formError && (
                 <div className="p-3.5 rounded-xl bg-rose-100 border-2 border-rose-600 text-rose-950 text-base font-bold flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-rose-800 shrink-0" />
@@ -251,7 +270,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Campo con etiqueta visible */}
                 <div>
                   <label 
                     htmlFor="clin-type"
@@ -274,7 +292,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   </select>
                 </div>
 
-                {/* Campo con etiqueta visible */}
                 <div>
                   <label 
                     htmlFor="clin-date"
@@ -286,6 +303,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                     id="clin-date"
                     type="date"
                     required
+                    max={todayStr}
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     className="w-full px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
@@ -293,7 +311,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                 </div>
               </div>
 
-              {/* Campo con etiqueta visible */}
               <div>
                 <label 
                   htmlFor="clin-title"
@@ -305,6 +322,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   id="clin-title"
                   type="text"
                   required
+                  maxLength={100}
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
@@ -316,7 +334,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* Campo con etiqueta visible */}
                 <div>
                   <label 
                     htmlFor="clin-vet"
@@ -327,6 +344,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   <input
                     id="clin-vet"
                     type="text"
+                    maxLength={80}
                     value={veterinarian}
                     onChange={(e) => setVeterinarian(e.target.value)}
                     placeholder="Dra. Gómez"
@@ -334,7 +352,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   />
                 </div>
 
-                {/* Campo con etiqueta visible */}
                 <div>
                   <label 
                     htmlFor="clin-clinic"
@@ -345,6 +362,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   <input
                     id="clin-clinic"
                     type="text"
+                    maxLength={80}
                     value={clinic}
                     onChange={(e) => setClinic(e.target.value)}
                     placeholder="Clínica San Roque"
@@ -352,7 +370,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   />
                 </div>
 
-                {/* Campo con etiqueta visible */}
+                {/* Campo de peso con soporte para coma decimal (Bug 7) */}
                 <div>
                   <label 
                     htmlFor="clin-weight"
@@ -362,10 +380,9 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   </label>
                   <input
                     id="clin-weight"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="150"
+                    type="text"
+                    inputMode="decimal"
+                    maxLength={6}
                     value={weightKg}
                     onChange={(e) => setWeightKg(e.target.value)}
                     placeholder="Ej: 14.5"
@@ -374,7 +391,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                 </div>
               </div>
 
-              {/* Campo con etiqueta visible */}
               <div>
                 <label 
                   htmlFor="clin-diagnosis"
@@ -385,6 +401,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                 <textarea
                   id="clin-diagnosis"
                   required
+                  maxLength={600}
                   rows={3}
                   value={diagnosisNotes}
                   onChange={(e) => {
@@ -397,7 +414,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Campo con etiqueta visible */}
                 <div>
                   <label 
                     htmlFor="clin-treatment"
@@ -408,6 +424,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   <input
                     id="clin-treatment"
                     type="text"
+                    maxLength={250}
                     value={treatment}
                     onChange={(e) => setTreatment(e.target.value)}
                     placeholder="Ej: Gotas en oído cada 12 horas por 7 días"
@@ -415,7 +432,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   />
                 </div>
 
-                {/* Campo con etiqueta visible */}
                 <div>
                   <label 
                     htmlFor="clin-followup"
@@ -433,30 +449,28 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                 </div>
               </div>
 
-              {/* BOTONERA: UN SOLO BOTÓN PRINCIPAL */}
+              {/* BOTONERA CON PROTECCIÓN ANTI-DOBLE CLIC (Bug 1) */}
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
-                {/* Botón secundario */}
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => setIsAddingNew(false)}
                   className="w-full sm:w-1/3 py-3.5 px-4 rounded-xl border-2 border-slate-400 bg-white hover:bg-slate-100 text-slate-800 font-bold text-base min-h-[52px]"
                 >
                   Cancelar
                 </button>
-                {/* ÚNICO BOTÓN PRINCIPAL */}
                 <button
                   type="submit"
-                  className="w-full sm:w-2/3 py-3.5 px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-2/3 py-3.5 px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 disabled:opacity-50 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
                 >
                   <Check className="w-6 h-6" />
-                  <span>Guardar en Historial</span>
+                  <span>{isSubmitting ? 'Guardando...' : 'Guardar en Historial'}</span>
                 </button>
               </div>
             </form>
           ) : (
-            /* LÍNEA DE TIEMPO INTERACTIVA */
             <div>
-              {/* ESTADO VACÍO (Requisito 5: Frase clara que invita a la acción) */}
               {sortedRecords.length === 0 ? (
                 <div className="text-center py-8 space-y-3 bg-slate-50 rounded-3xl p-6 border-2 border-slate-300">
                   <div className="w-16 h-16 rounded-2xl bg-slate-200 text-slate-700 flex items-center justify-center mx-auto">
@@ -496,7 +510,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                     return (
                       <div
                         key={rec.id}
-                        className="bg-white rounded-2xl p-4 border-2 border-slate-300 shadow-sm space-y-2.5"
+                        className="bg-white rounded-2xl p-4 border-2 border-slate-300 shadow-sm space-y-2.5 break-words"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
@@ -512,7 +526,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                               </span>
                             </div>
 
-                            <h4 className="text-lg font-black text-slate-950 leading-tight">
+                            <h4 className="text-lg font-black text-slate-950 leading-tight break-all">
                               {rec.title}
                             </h4>
                           </div>
@@ -534,13 +548,13 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                         {/* Metadatos: Médico, Clínica, Peso */}
                         <div className="flex items-center gap-3 text-base text-slate-800 flex-wrap font-medium">
                           {rec.veterinarian && (
-                            <span className="inline-flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1.5 break-all">
                               <Stethoscope className="w-5 h-5 text-slate-600" />
                               {rec.veterinarian}
                             </span>
                           )}
                           {rec.clinic && (
-                            <span className="inline-flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1.5 break-all">
                               <MapPin className="w-5 h-5 text-slate-600" />
                               {rec.clinic}
                             </span>
@@ -553,9 +567,9 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                           )}
                         </div>
 
-                        {/* Diagnóstico */}
+                        {/* Diagnóstico con break-words */}
                         <p
-                          className={`text-base text-slate-900 leading-relaxed bg-slate-100 p-3 rounded-xl border border-slate-200 ${
+                          className={`text-base text-slate-900 leading-relaxed bg-slate-100 p-3 rounded-xl border border-slate-200 break-words ${
                             !isExpanded ? 'line-clamp-2' : ''
                           }`}
                         >
@@ -566,7 +580,7 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                         {(rec.treatment || rec.followUpDate) && (
                           <div className="pt-1 space-y-1.5 text-base">
                             {rec.treatment && (
-                              <div className="flex items-start gap-2 text-slate-900">
+                              <div className="flex items-start gap-2 text-slate-900 break-words">
                                 <Pill className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
                                 <span>
                                   <strong>Tratamiento:</strong> {rec.treatment}

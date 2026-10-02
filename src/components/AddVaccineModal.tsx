@@ -4,7 +4,8 @@ import { COMMON_VACCINE_TEMPLATES } from '../data/initialData';
 import { 
   calculateNextDoseDate, 
   formatLocalDateToInput, 
-  formatReadableDate 
+  formatReadableDate,
+  isFutureDate 
 } from '../utils/dateCalculations';
 import { X, Check, Clock, Plus, Syringe, AlertCircle } from 'lucide-react';
 
@@ -29,6 +30,7 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
   const [intervalUnit, setIntervalUnit] = useState<VaccineFrequencyUnit>('meses');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen || !pet) return null;
 
@@ -47,23 +49,36 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim()) {
+    if (isSubmitting) return;
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       setError('Por favor, escribe el nombre de la vacuna antes de continuar.');
       return;
     }
 
-    const cleanInterval = Math.max(1, Number(intervalValue) || 12);
+    if (isFutureDate(applicationDate)) {
+      setError('La fecha de aplicación no puede ser en el futuro.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const cleanInterval = Math.max(1, Math.min(365, Number(intervalValue) || 12));
+    const cleanDate = applicationDate || todayStr;
+
     const newVaccine: Vaccine = {
       id: `vac-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      name: name.trim(),
-      applicationDate: applicationDate || todayStr,
+      name: trimmedName.substring(0, 50),
+      applicationDate: cleanDate,
       intervalValue: cleanInterval,
       intervalUnit,
-      notes: notes.trim() || undefined,
+      notes: notes.trim().substring(0, 250) || undefined,
       nextDoseDate: calculatedNextDose,
     };
 
     onAddVaccine(pet.id, newVaccine);
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -93,7 +108,7 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
           </button>
         </div>
 
-        {/* Mensaje de error visible en español claro (Requisito 6) */}
+        {/* Mensaje de error visible */}
         {error && (
           <div className="p-3.5 rounded-xl bg-rose-100 border-2 border-rose-600 text-rose-950 text-base font-bold flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-rose-800 shrink-0" />
@@ -123,7 +138,7 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
             </div>
           </div>
 
-          {/* Campo: Nombre con etiqueta visible (Requisito 3) */}
+          {/* Campo: Nombre con maxLength (Bug 2) */}
           <div>
             <label 
               htmlFor="add-vac-name"
@@ -135,6 +150,7 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
               id="add-vac-name"
               type="text"
               required
+              maxLength={50}
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
@@ -146,7 +162,7 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Campo: Fecha con etiqueta visible */}
+            {/* Campo: Fecha con max=todayStr (Bug 4) */}
             <div>
               <label 
                 htmlFor="add-vac-date"
@@ -158,13 +174,14 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
                 id="add-vac-date"
                 type="date"
                 required
+                max={todayStr}
                 value={applicationDate}
                 onChange={(e) => setApplicationDate(e.target.value)}
                 className="w-full px-3 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-bold text-base min-h-[48px]"
               />
             </div>
 
-            {/* Campo: Intervalo con etiqueta visible */}
+            {/* Campo: Intervalo sanitizado */}
             <div>
               <label 
                 htmlFor="add-vac-interval"
@@ -179,7 +196,10 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
                   min="1"
                   max="365"
                   value={intervalValue}
-                  onChange={(e) => setIntervalValue(parseInt(e.target.value, 10) || 1)}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setIntervalValue(isNaN(val) ? 1 : Math.max(1, Math.min(365, val)));
+                  }}
                   className="w-20 px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                 />
                 <select
@@ -197,7 +217,7 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
             </div>
           </div>
 
-          {/* Campo: Observaciones con etiqueta visible */}
+          {/* Campo: Observaciones */}
           <div>
             <label 
               htmlFor="add-vac-notes"
@@ -208,6 +228,7 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
             <input
               id="add-vac-notes"
               type="text"
+              maxLength={250}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Clínica, veterinario o lote de la dosis..."
@@ -224,24 +245,24 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
             </div>
           </div>
 
-          {/* BOTONERA: UN SOLO BOTÓN PRINCIPAL (Requisito 4) */}
+          {/* BOTONERA CON PROTECCIÓN ANTI-DOBLE CLIC (Bug 1) */}
           <div className="pt-2 flex flex-col sm:flex-row gap-3">
-            {/* Botón secundario */}
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={onClose}
               className="w-full sm:w-1/3 py-3.5 px-4 rounded-xl border-2 border-slate-400 bg-white hover:bg-slate-100 text-slate-800 font-bold text-base min-h-[52px]"
             >
               Cancelar
             </button>
 
-            {/* ÚNICO BOTÓN PRINCIPAL */}
             <button
               type="submit"
-              className="w-full sm:w-2/3 py-3.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full sm:w-2/3 py-3.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 disabled:opacity-50 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
             >
               <Check className="w-6 h-6" />
-              <span>Guardar Vacuna</span>
+              <span>{isSubmitting ? 'Guardando...' : 'Guardar Vacuna'}</span>
             </button>
           </div>
         </form>

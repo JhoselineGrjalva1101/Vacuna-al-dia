@@ -4,7 +4,8 @@ import { COMMON_VACCINE_TEMPLATES } from '../data/initialData';
 import { 
   calculateNextDoseDate, 
   formatLocalDateToInput, 
-  formatReadableDate 
+  formatReadableDate,
+  isFutureDate 
 } from '../utils/dateCalculations';
 import { 
   X, 
@@ -41,6 +42,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
   const [customSpecies, setCustomSpecies] = useState('');
   const [ageYears, setAgeYears] = useState<number>(2);
   const [ageMonths, setAgeMonths] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const todayStr = formatLocalDateToInput(new Date());
   const [draftVaccines, setDraftVaccines] = useState<DraftVaccine[]>([
@@ -103,7 +105,12 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim()) {
+    // Protección anti doble clic (Bug 1)
+    if (isSubmitting) return;
+
+    // Validación estricta sin espacios en blanco (Bug 6)
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       setErrorMessage('Por favor, escribe el nombre de la mascota antes de guardar.');
       return;
     }
@@ -113,40 +120,57 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
       return;
     }
 
+    // Validar fechas futuras en vacunas aplicadas (Bug 4)
+    for (const v of draftVaccines) {
+      if (v.name.trim() && isFutureDate(v.applicationDate)) {
+        setErrorMessage(`La vacuna "${v.name}" tiene una fecha futura (${v.applicationDate}). La fecha de aplicación debe ser hoy o una fecha anterior.`);
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
     const validVaccines: Vaccine[] = draftVaccines
       .filter((v) => v.name.trim().length > 0)
       .map((v) => {
-        const cleanInterval = Math.max(1, Number(v.intervalValue) || 12);
+        // Sanitización contra números negativos o gigantes (Bug 3)
+        const cleanInterval = Math.max(1, Math.min(365, Number(v.intervalValue) || 12));
+        const cleanDate = v.applicationDate || todayStr;
         const calculatedNextDose = calculateNextDoseDate(
-          v.applicationDate || todayStr,
+          cleanDate,
           cleanInterval,
           v.intervalUnit
         );
 
         return {
           id: `vac-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-          name: v.name.trim(),
-          applicationDate: v.applicationDate || todayStr,
+          name: v.name.trim().substring(0, 50),
+          applicationDate: cleanDate,
           intervalValue: cleanInterval,
           intervalUnit: v.intervalUnit,
-          notes: v.notes?.trim() || undefined,
+          notes: v.notes?.trim().substring(0, 250) || undefined,
           nextDoseDate: calculatedNextDose,
         };
       });
 
+    // Sanitización contra números negativos en edad (Bug 3)
+    const safeYears = Math.max(0, Math.min(30, Number(ageYears) || 0));
+    const safeMonths = Math.max(0, Math.min(11, Number(ageMonths) || 0));
+
     const newPet: Pet = {
       id: `pet-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      name: name.trim(),
+      name: trimmedName.substring(0, 50),
       species,
-      customSpecies: species === 'otro' ? customSpecies.trim() : undefined,
-      ageYears: Math.max(0, Number(ageYears) || 0),
-      ageMonths: Math.max(0, Math.min(11, Number(ageMonths) || 0)),
+      customSpecies: species === 'otro' ? customSpecies.trim().substring(0, 50) : undefined,
+      ageYears: safeYears,
+      ageMonths: safeMonths,
       photoEmoji: species === 'perro' ? '🐶' : species === 'gato' ? '🐱' : '🐾',
       vaccines: validVaccines,
       createdAt: todayStr,
     };
 
     onSavePet(newPet);
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -176,7 +200,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
         {/* Contenido con Scroll */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-6 space-y-5">
           
-          {/* Mensaje de error visible en español claro (Requisito 6) */}
+          {/* Mensaje de error visible */}
           {errorMessage && (
             <div className="p-4 rounded-2xl bg-rose-100 border-2 border-rose-600 text-rose-950 text-base font-bold flex items-center gap-2">
               <AlertCircle className="w-6 h-6 text-rose-800 shrink-0" />
@@ -184,10 +208,10 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
             </div>
           )}
 
-          {/* 1. Datos Básicos con ETIQUETAS VISIBLES (Requisito 3) */}
+          {/* 1. Datos Básicos */}
           <div className="space-y-4">
             
-            {/* Campo: Nombre con etiqueta visible */}
+            {/* Campo: Nombre con maxLength (Bug 2) */}
             <div>
               <label 
                 htmlFor="pet-name-input"
@@ -199,6 +223,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                 id="pet-name-input"
                 type="text"
                 required
+                maxLength={50}
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
@@ -209,7 +234,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
               />
             </div>
 
-            {/* Campo: Especie con etiqueta visible */}
+            {/* Campo: Especie */}
             <div>
               <label className="block text-base font-black text-slate-950 mb-1.5">
                 Especie del animal:
@@ -266,6 +291,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                   <input
                     id="custom-species-input"
                     type="text"
+                    maxLength={50}
                     value={customSpecies}
                     onChange={(e) => setCustomSpecies(e.target.value)}
                     placeholder="Por ejemplo: Conejo, Hurón, Cobayo..."
@@ -275,7 +301,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
               )}
             </div>
 
-            {/* Campo: Edad con etiquetas visibles */}
+            {/* Campo: Edad con sanitización (Bug 3) */}
             <div>
               <label className="block text-base font-black text-slate-950 mb-1">
                 Edad aproximada:
@@ -291,7 +317,10 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                     min="0"
                     max="30"
                     value={ageYears}
-                    onChange={(e) => setAgeYears(parseInt(e.target.value, 10) || 0)}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setAgeYears(isNaN(val) ? 0 : Math.max(0, Math.min(30, val)));
+                    }}
                     className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                   />
                 </div>
@@ -305,7 +334,10 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                     min="0"
                     max="11"
                     value={ageMonths}
-                    onChange={(e) => setAgeMonths(parseInt(e.target.value, 10) || 0)}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setAgeMonths(isNaN(val) ? 0 : Math.max(0, Math.min(11, val)));
+                    }}
                     className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                   />
                 </div>
@@ -313,7 +345,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
             </div>
           </div>
 
-          {/* 2. Vacunas Aplicadas con etiquetas visibles */}
+          {/* 2. Vacunas Aplicadas */}
           <div className="pt-4 border-t-2 border-slate-200 space-y-3">
             <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
               <div>
@@ -325,7 +357,6 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                 </p>
               </div>
 
-              {/* Botón secundario para agregar fila */}
               <button
                 type="button"
                 onClick={handleAddVaccineRow}
@@ -356,7 +387,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
               </div>
             </div>
 
-            {/* Lista de Filas de Vacunas con Etiquetas */}
+            {/* Lista de Filas de Vacunas */}
             <div className="space-y-4">
               {draftVaccines.map((v, index) => {
                 const calculatedNext = calculateNextDoseDate(
@@ -388,7 +419,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                       )}
                     </div>
 
-                    {/* Nombre con etiqueta visible */}
+                    {/* Nombre con maxLength (Bug 2) */}
                     <div>
                       <label 
                         htmlFor={`vac-name-${v.id}`}
@@ -400,6 +431,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                         id={`vac-name-${v.id}`}
                         type="text"
                         required
+                        maxLength={50}
                         value={v.name}
                         onChange={(e) => handleUpdateVaccine(v.id, 'name', e.target.value)}
                         placeholder="Por ejemplo: Antirrábica, Séxtuple..."
@@ -408,7 +440,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Fecha de Aplicación con etiqueta visible */}
+                      {/* Fecha con max=todayStr para impedir fechas futuras (Bug 4) */}
                       <div>
                         <label 
                           htmlFor={`vac-date-${v.id}`}
@@ -420,13 +452,14 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                           id={`vac-date-${v.id}`}
                           type="date"
                           required
+                          max={todayStr}
                           value={v.applicationDate}
                           onChange={(e) => handleUpdateVaccine(v.id, 'applicationDate', e.target.value)}
                           className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-bold text-base min-h-[48px]"
                         />
                       </div>
 
-                      {/* Intervalo con etiqueta visible */}
+                      {/* Intervalo sanitizado */}
                       <div>
                         <label 
                           htmlFor={`vac-interval-${v.id}`}
@@ -441,13 +474,14 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                             min="1"
                             max="365"
                             value={v.intervalValue}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
                               handleUpdateVaccine(
                                 v.id,
                                 'intervalValue',
-                                parseInt(e.target.value, 10) || 1
-                              )
-                            }
+                                isNaN(val) ? 1 : Math.max(1, Math.min(365, val))
+                              );
+                            }}
                             className="w-20 px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                           />
                           <select
@@ -484,24 +518,24 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
             </div>
           </div>
 
-          {/* BOTONERA: UN SOLO BOTÓN PRINCIPAL (Requisito 4) */}
+          {/* BOTONERA CON PROTECCIÓN ANTI-DOBLE CLIC (Bug 1) */}
           <div className="pt-3 flex flex-col sm:flex-row gap-3">
-            {/* Botón secundario */}
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={onClose}
               className="w-full sm:w-1/3 py-3.5 px-4 rounded-xl border-2 border-slate-400 bg-white hover:bg-slate-100 text-slate-800 font-bold text-base min-h-[52px]"
             >
               Cancelar
             </button>
 
-            {/* ÚNICO BOTÓN PRINCIPAL */}
             <button
               type="submit"
-              className="w-full sm:w-2/3 py-3.5 px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full sm:w-2/3 py-3.5 px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 disabled:opacity-50 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
             >
               <Check className="w-6 h-6" />
-              <span>Guardar Mascota</span>
+              <span>{isSubmitting ? 'Guardando...' : 'Guardar Mascota'}</span>
             </button>
           </div>
         </form>

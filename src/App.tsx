@@ -9,13 +9,15 @@ import { PetFormModal } from './components/PetFormModal';
 import { AddVaccineModal } from './components/AddVaccineModal';
 import { ClinicalHistoryModal } from './components/ClinicalHistoryModal';
 import { BackupModal } from './components/BackupModal';
+import { AiVetAdvisorModal } from './components/AiVetAdvisorModal';
 import { 
   Bell, 
   Plus, 
   RotateCcw,
   Sparkles,
   HardDrive,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function App() {
@@ -23,16 +25,35 @@ export default function App() {
   // ESTADO Y PERSISTENCIA (LocalStorage centralizado)
   // -------------------------------------------------------------
   const [pets, setPets] = useState<Pet[]>(() => loadPetsFromStorage());
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' } | null>(null);
 
-  // Guardar en localStorage cada vez que cambien las mascotas
+  // Guardar en localStorage cada vez que cambien las mascotas con verificación de cuota (Bug 9)
   useEffect(() => {
-    savePetsToStorage(pets);
+    const result = savePetsToStorage(pets);
+    if (!result.success && result.quotaExceeded) {
+      showNotification(
+        'La memoria del navegador está llena. Por favor, exporta un respaldo y elimina datos antiguos.',
+        'warning'
+      );
+    }
   }, [pets]);
 
-  const showNotification = (msg: string) => {
-    setSuccessToast(msg);
-    setTimeout(() => setSuccessToast(null), 4000);
+  // Detector de conectividad offline (Bug 10)
+  useEffect(() => {
+    const handleOffline = () => {
+      showNotification(
+        'Estás sin conexión a internet. Tus datos siguen guardándose de forma segura en este celular.',
+        'warning'
+      );
+    };
+
+    window.addEventListener('offline', handleOffline);
+    return () => window.removeEventListener('offline', handleOffline);
+  }, []);
+
+  const showNotification = (msg: string, type: 'success' | 'warning' = 'success') => {
+    setToast({ message: msg, type });
+    setTimeout(() => setToast(null), 5000);
   };
 
   // Pestaña activa ('alertas' = lista de vencidas/por vencer, 'mascotas' = lista de mascotas)
@@ -42,6 +63,7 @@ export default function App() {
   const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
   const [selectedPetForVaccine, setSelectedPetForVaccine] = useState<Pet | null>(null);
   const [selectedPetForHistory, setSelectedPetForHistory] = useState<Pet | null>(null);
+  const [selectedPetForAi, setSelectedPetForAi] = useState<Pet | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   // -------------------------------------------------------------
@@ -172,11 +194,21 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans pb-16 w-full max-w-full overflow-x-hidden">
       
-      {/* Toast de Éxito Visible (Requisito 6) */}
-      {successToast && (
-        <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-4 z-50 max-w-md bg-emerald-900 border-2 border-emerald-400 text-white p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
-          <CheckCircle2 className="w-7 h-7 text-emerald-300 shrink-0" />
-          <p className="text-base font-bold leading-tight">{successToast}</p>
+      {/* Toast de Notificación Visible */}
+      {toast && (
+        <div
+          className={`fixed top-4 left-3 right-3 sm:left-auto sm:right-4 z-50 max-w-md border-2 p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${
+            toast.type === 'warning'
+              ? 'bg-amber-950 border-amber-400 text-white'
+              : 'bg-emerald-900 border-emerald-400 text-white'
+          }`}
+        >
+          {toast.type === 'warning' ? (
+            <AlertCircle className="w-7 h-7 text-amber-300 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-7 h-7 text-emerald-300 shrink-0" />
+          )}
+          <p className="text-base font-bold leading-tight">{toast.message}</p>
         </div>
       )}
 
@@ -344,6 +376,7 @@ export default function App() {
                     onDeletePet={handleDeletePet}
                     onDeleteVaccine={handleDeleteVaccine}
                     onOpenClinicalHistory={(p) => setSelectedPetForHistory(p)}
+                    onOpenAiAdvisor={(p) => setSelectedPetForAi(p)}
                   />
                 ))}
               </div>
@@ -401,6 +434,14 @@ export default function App() {
           setPets([]);
           showNotification('Todos los datos fueron borrados de este celular.');
         }}
+      />
+
+      {/* Modal del Asesor Veterinario con IA de Gemini */}
+      <AiVetAdvisorModal
+        isOpen={Boolean(selectedPetForAi)}
+        pet={selectedPetForAi ? pets.find((p) => p.id === selectedPetForAi.id) || null : null}
+        onClose={() => setSelectedPetForAi(null)}
+        onAddVaccineToPet={handleAddVaccineToPet}
       />
     </div>
   );

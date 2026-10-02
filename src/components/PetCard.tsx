@@ -17,7 +17,8 @@ import {
   Calendar,
   Clock,
   Syringe,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 
 interface PetCardProps {
@@ -26,6 +27,7 @@ interface PetCardProps {
   onDeletePet: (petId: string) => void;
   onDeleteVaccine: (petId: string, vaccineId: string) => void;
   onOpenClinicalHistory: (pet: Pet) => void;
+  onOpenAiAdvisor: (pet: Pet) => void;
 }
 
 export const PetCard: React.FC<PetCardProps> = ({
@@ -34,6 +36,7 @@ export const PetCard: React.FC<PetCardProps> = ({
   onDeletePet,
   onDeleteVaccine,
   onOpenClinicalHistory,
+  onOpenAiAdvisor,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -123,6 +126,16 @@ export const PetCard: React.FC<PetCardProps> = ({
 
         {/* Botonera de acciones (Botones secundarios claramente diferenciados) */}
         <div className="pt-2 flex flex-wrap gap-2">
+          {/* Botón Asesor Veterinario IA */}
+          <button
+            onClick={() => onOpenAiAdvisor(pet)}
+            className="flex-1 min-w-[130px] py-2.5 px-3 rounded-xl border-2 border-purple-800 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 text-purple-950 font-bold text-base transition-colors min-h-[48px] flex items-center justify-center gap-1.5"
+            title="Armar calendario y preguntas con Inteligencia Artificial"
+          >
+            <Sparkles className="w-5 h-5 text-purple-800" />
+            <span>Asesor IA</span>
+          </button>
+
           {/* Botón Historial Clínico */}
           <button
             onClick={() => onOpenClinicalHistory(pet)}
