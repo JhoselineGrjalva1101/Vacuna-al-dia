@@ -6,7 +6,7 @@ import {
   formatLocalDateToInput, 
   formatReadableDate 
 } from '../utils/dateCalculations';
-import { X, Check, Clock, Plus, Syringe } from 'lucide-react';
+import { X, Check, Clock, Plus, Syringe, AlertCircle } from 'lucide-react';
 
 interface AddVaccineModalProps {
   isOpen: boolean;
@@ -32,7 +32,6 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
 
   if (!isOpen || !pet) return null;
 
-  // Cálculo en vivo de la fecha resultante (Función 2)
   const calculatedNextDose = calculateNextDoseDate(
     applicationDate || todayStr,
     Math.max(1, Number(intervalValue) || 12),
@@ -49,7 +48,7 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
     e.preventDefault();
 
     if (!name.trim()) {
-      setError('Por favor indica el nombre de la vacuna.');
+      setError('Por favor, escribe el nombre de la vacuna antes de continuar.');
       return;
     }
 
@@ -71,58 +70,69 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
   const templates = COMMON_VACCINE_TEMPLATES[pet.species] || COMMON_VACCINE_TEMPLATES.otro;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 space-y-4 animate-in fade-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-200">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 sm:p-6 space-y-4 border-2 border-slate-400 animate-in fade-in duration-150">
+        
+        {/* Cabecera */}
+        <div className="flex items-center justify-between pb-3 border-b-2 border-slate-200">
           <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-              <Syringe className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-xl font-black text-slate-950 flex items-center gap-2">
+              <Syringe className="w-6 h-6 text-emerald-800" />
               Nueva Vacuna para {pet.name}
             </h2>
-            <p className="text-xs text-slate-500">
-              Registra la dosis y calcula la próxima fecha
+            <p className="text-base text-slate-700">
+              Registra la dosis y calculamos el refuerzo
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-slate-600"
+            className="p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 min-h-[48px] min-w-[48px] flex items-center justify-center"
+            aria-label="Cerrar formulario"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
+        {/* Mensaje de error visible en español claro (Requisito 6) */}
         {error && (
-          <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-            {error}
+          <div className="p-3.5 rounded-xl bg-rose-100 border-2 border-rose-600 text-rose-950 text-base font-bold flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-rose-800 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          {/* Plantillas sugeridas */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* Sugerencias comunes */}
           <div>
-            <span className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">
+            <span className="block text-base font-bold text-slate-900 mb-1">
               Vacunas frecuentes para {pet.species === 'perro' ? 'perro' : pet.species === 'gato' ? 'gato' : 'mascota'}:
             </span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {templates.map((tmpl) => (
                 <button
                   key={tmpl.name}
                   type="button"
                   onClick={() => handleSelectTemplate(tmpl.name, tmpl.intervalValue, tmpl.intervalUnit)}
-                  className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200 transition-colors inline-flex items-center gap-1"
+                  className="text-base px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-400 text-slate-900 font-semibold min-h-[48px] inline-flex items-center gap-1.5"
                 >
-                  <Plus className="w-2.5 h-2.5" />
+                  <Plus className="w-4 h-4 text-emerald-800" />
                   <span>{tmpl.name}</span>
                 </button>
               ))}
             </div>
           </div>
 
+          {/* Campo: Nombre con etiqueta visible (Requisito 3) */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Nombre de la Vacuna *
+            <label 
+              htmlFor="add-vac-name"
+              className="block text-base font-black text-slate-950 mb-1"
+            >
+              Nombre de la vacuna:
             </label>
             <input
+              id="add-vac-name"
               type="text"
               required
               value={name}
@@ -130,42 +140,54 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
                 setName(e.target.value);
                 setError('');
               }}
-              placeholder="Ej: Antirrábica, Séxtuple..."
-              className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Por ejemplo: Antirrábica, Séxtuple..."
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-bold text-base min-h-[48px]"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Campo: Fecha con etiqueta visible */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
-                Fecha de Aplicación:
+              <label 
+                htmlFor="add-vac-date"
+                className="block text-base font-black text-slate-950 mb-1"
+              >
+                Fecha de aplicación:
               </label>
               <input
+                id="add-vac-date"
                 type="date"
                 required
                 value={applicationDate}
                 onChange={(e) => setApplicationDate(e.target.value)}
-                className="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-bold text-base min-h-[48px]"
               />
             </div>
 
+            {/* Campo: Intervalo con etiqueta visible */}
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
-                Refuerzo cada:
+              <label 
+                htmlFor="add-vac-interval"
+                className="block text-base font-black text-slate-950 mb-1"
+              >
+                Reforzar cada:
               </label>
-              <div className="flex gap-1.5">
+              <div className="flex gap-2">
                 <input
+                  id="add-vac-interval"
                   type="number"
                   min="1"
                   max="365"
                   value={intervalValue}
                   onChange={(e) => setIntervalValue(parseInt(e.target.value, 10) || 1)}
-                  className="w-16 px-2 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-20 px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                 />
                 <select
+                  id="add-vac-unit"
+                  aria-label="Unidad de frecuencia de refuerzo"
                   value={intervalUnit}
                   onChange={(e) => setIntervalUnit(e.target.value as VaccineFrequencyUnit)}
-                  className="flex-1 px-2 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="flex-1 px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                 >
                   <option value="meses">Meses</option>
                   <option value="dias">Días</option>
@@ -175,42 +197,51 @@ export const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
             </div>
           </div>
 
+          {/* Campo: Observaciones con etiqueta visible */}
           <div>
-            <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+            <label 
+              htmlFor="add-vac-notes"
+              className="block text-base font-bold text-slate-900 mb-1"
+            >
               Observaciones (opcional):
             </label>
             <input
+              id="add-vac-notes"
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Clínica, veterinario o lote..."
-              className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Clínica, veterinario o lote de la dosis..."
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-base text-slate-900 min-h-[48px]"
             />
           </div>
 
           {/* Cálculo en vivo de la Próxima Dosis */}
-          <div className="flex items-center gap-1.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
-            <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="flex items-center gap-2 p-3.5 rounded-xl bg-emerald-100 border-2 border-emerald-400 text-base text-emerald-950 font-bold">
+            <Clock className="w-6 h-6 text-emerald-900 shrink-0" />
             <div>
-              <span className="block font-semibold">Próxima dosis calculada:</span>
-              <strong className="text-emerald-950 font-bold">{formatReadableDate(calculatedNextDose)}</strong>
+              <span className="block text-slate-800 text-base font-semibold">Próxima dosis recomendada:</span>
+              <span className="text-emerald-950 font-black text-lg">{formatReadableDate(calculatedNextDose)}</span>
             </div>
           </div>
 
-          <div className="pt-2 flex gap-2">
+          {/* BOTONERA: UN SOLO BOTÓN PRINCIPAL (Requisito 4) */}
+          <div className="pt-2 flex flex-col sm:flex-row gap-3">
+            {/* Botón secundario */}
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50"
+              className="w-full sm:w-1/3 py-3.5 px-4 rounded-xl border-2 border-slate-400 bg-white hover:bg-slate-100 text-slate-800 font-bold text-base min-h-[52px]"
             >
               Cancelar
             </button>
+
+            {/* ÚNICO BOTÓN PRINCIPAL */}
             <button
               type="submit"
-              className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 inline-flex items-center justify-center gap-1.5"
+              className="w-full sm:w-2/3 py-3.5 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
             >
-              <Check className="w-4 h-4" />
-              Guardar Vacuna
+              <Check className="w-6 h-6" />
+              <span>Guardar Vacuna</span>
             </button>
           </div>
         </form>

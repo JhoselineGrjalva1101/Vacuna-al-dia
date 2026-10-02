@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+@layer base {
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+    color: #0f172a;
+    background-color: #f1f5f9;
+  }
+
+  /* Asegurar que ningún texto sea menor a 16px (1rem) en toda la aplicación */
+  * {
+    font-size: max(16px, 1rem);
+  }
+
+  /* Excepción controlada únicamente para títulos y encabezados grandes */
+  h1, .text-xl, .text-2xl, .text-3xl {
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+  }
+
+  h2, .text-lg {
+    font-size: clamp(1.125rem, 4vw, 1.35rem);
+  }
+
+  /* Asegurar que las zonas de toque en celulares sean cómodas (mínimo 48px) */
+  button, input, select, textarea {
+    min-height: 48px;
+    font-size: 16px !important;
+  }
+}

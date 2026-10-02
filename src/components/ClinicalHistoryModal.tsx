@@ -33,12 +33,12 @@ const TYPE_CONFIG: Record<
   ClinicalRecordType,
   { label: string; icon: React.ComponentType<{ className?: string }>; bg: string; text: string; border: string }
 > = {
-  consulta: { label: 'Consulta', icon: Stethoscope, bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  tratamiento: { label: 'Tratamiento', icon: Pill, bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-  cirugia: { label: 'Cirugía', icon: Activity, bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  desparasitacion: { label: 'Desparasitación', icon: Bug, bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200' },
-  estudio: { label: 'Estudio / Análisis', icon: FileText, bg: 'bg-cyan-50', text: 'text-cyan-800', border: 'border-cyan-200' },
-  urgencia: { label: 'Urgencia', icon: AlertCircle, bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+  consulta: { label: 'Consulta', icon: Stethoscope, bg: 'bg-blue-100', text: 'text-blue-950', border: 'border-blue-500' },
+  tratamiento: { label: 'Tratamiento', icon: Pill, bg: 'bg-emerald-100', text: 'text-emerald-950', border: 'border-emerald-500' },
+  cirugia: { label: 'Cirugía', icon: Activity, bg: 'bg-purple-100', text: 'text-purple-950', border: 'border-purple-500' },
+  desparasitacion: { label: 'Desparasitación', icon: Bug, bg: 'bg-amber-100', text: 'text-amber-950', border: 'border-amber-500' },
+  estudio: { label: 'Estudio / Análisis', icon: FileText, bg: 'bg-cyan-100', text: 'text-cyan-950', border: 'border-cyan-500' },
+  urgencia: { label: 'Urgencia', icon: AlertCircle, bg: 'bg-rose-100', text: 'text-rose-950', border: 'border-rose-500' },
 };
 
 export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
@@ -53,7 +53,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
 
-  // Estado del formulario de nuevo registro
   const todayStr = formatLocalDateToInput(new Date());
   const [date, setDate] = useState(todayStr);
   const [type, setType] = useState<ClinicalRecordType>('consulta');
@@ -70,7 +69,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
 
   const records = pet.clinicalRecords || [];
 
-  // Filtrado interactivo por texto y categoría
   const filteredRecords = records.filter((rec) => {
     const matchesType = selectedType === 'todos' || rec.type === selectedType;
     const query = searchTerm.toLowerCase().trim();
@@ -85,7 +83,6 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
     return matchesType && matchesSearch;
   });
 
-  // Ordenar cronológicamente (más recientes primero)
   const sortedRecords = [...filteredRecords].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
@@ -108,12 +105,12 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
     e.preventDefault();
 
     if (!title.trim()) {
-      setFormError('Por favor ingresa el motivo o título de la entrada clínica.');
+      setFormError('Por favor, indica el motivo o título de la consulta.');
       return;
     }
 
     if (!diagnosisNotes.trim()) {
-      setFormError('Por favor describe las observaciones o diagnóstico médico.');
+      setFormError('Por favor, escribe las observaciones o diagnóstico del veterinario.');
       return;
     }
 
@@ -135,23 +132,24 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] flex flex-col animate-in fade-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[94vh] flex flex-col border-2 border-slate-400 animate-in fade-in duration-150">
+        
         {/* Cabecera */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl">{pet.species === 'perro' ? '🐶' : pet.species === 'gato' ? '🐱' : '🐾'}</span>
+        <div className="px-5 py-4 border-b-2 border-slate-200 flex items-center justify-between shrink-0 bg-slate-50">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{pet.species === 'perro' ? '🐶' : pet.species === 'gato' ? '🐱' : '🐾'}</span>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                  Historial Clínico de {pet.name}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-black text-slate-950 leading-tight">
+                  Historial de {pet.name}
                 </h2>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                <span className="text-base font-bold px-2.5 py-0.5 rounded-lg bg-slate-200 text-slate-900 border border-slate-400">
                   {records.length} {records.length === 1 ? 'registro' : 'registros'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
-                Línea de tiempo de consultas, cirugías y tratamientos
+              <p className="text-base text-slate-700">
+                Consultas, diagnósticos y tratamientos
               </p>
             </div>
           </div>
@@ -160,44 +158,47 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
               resetForm();
               onClose();
             }}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            className="p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 min-h-[48px] min-w-[48px] flex items-center justify-center"
+            aria-label="Cerrar historial"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Barra de Filtros y Búsqueda Interactiva */}
+        {/* Barra de Filtros y Búsqueda */}
         {!isAddingNew && (
-          <div className="p-4 border-b border-slate-100 space-y-2.5 bg-slate-50/60 shrink-0">
-            <div className="flex gap-2">
+          <div className="p-4 border-b-2 border-slate-200 space-y-3 bg-slate-100 shrink-0">
+            <div className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-5 h-5 text-slate-600 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
+                  aria-label="Buscar en historial clínico"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar síntoma, diagnóstico, médico..."
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full pl-10 pr-3 py-3 rounded-xl bg-white border-2 border-slate-400 text-base text-slate-950 font-bold focus:outline-none focus:border-emerald-700 min-h-[48px]"
                 />
               </div>
 
+              {/* ÚNICO BOTÓN PRINCIPAL EN LA VISTA DE LISTA */}
               <button
                 onClick={() => setIsAddingNew(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shrink-0 shadow-xs"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-base font-black transition-colors shrink-0 shadow-md min-h-[48px]"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Nueva Entrada</span>
+                <Plus className="w-5 h-5" />
+                <span>+ Nueva Entrada</span>
               </button>
             </div>
 
             {/* Chips de Categorías */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none text-xs">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               <button
                 onClick={() => setSelectedType('todos')}
-                className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-2 rounded-xl font-bold min-h-[48px] border-2 whitespace-nowrap transition-colors text-base ${
                   selectedType === 'todos'
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-900 border-slate-400 hover:bg-slate-200'
                 }`}
               >
                 Todos ({records.length})
@@ -208,10 +209,10 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                   <button
                     key={t}
                     onClick={() => setSelectedType(t)}
-                    className={`px-2.5 py-1 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                    className={`px-3 py-2 rounded-xl font-bold min-h-[48px] border-2 whitespace-nowrap transition-colors text-base ${
                       selectedType === t
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-900 border-slate-400 hover:bg-slate-200'
                     }`}
                   >
                     {TYPE_CONFIG[t].label} ({count})
@@ -223,67 +224,85 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
         )}
 
         {/* Contenido con Scroll: Formulario o Línea de Tiempo */}
-        <div className="overflow-y-auto p-4 sm:p-5 flex-1">
+        <div className="overflow-y-auto p-4 sm:p-6 flex-1">
           {isAddingNew ? (
-            /* Formulario para Agregar Entrada Clínica */
-            <form onSubmit={handleSave} className="space-y-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h3 className="text-sm font-bold text-slate-800">
-                  Registrar Entrada al Historial Clínico
+            /* Formulario con ETIQUETAS VISIBLES EN TODOS LOS CAMPOS */
+            <form onSubmit={handleSave} className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b-2 border-slate-200">
+                <h3 className="text-lg font-black text-slate-950">
+                  Nueva entrada clínica
                 </h3>
+                {/* Botón secundario para volver */}
                 <button
                   type="button"
                   onClick={() => setIsAddingNew(false)}
-                  className="text-xs text-slate-500 hover:text-slate-700 font-medium"
+                  className="text-base text-slate-800 font-bold hover:underline p-1 min-h-[48px]"
                 >
                   Volver a la lista
                 </button>
               </div>
 
+              {/* Mensaje de error sin palabras técnicas */}
               {formError && (
-                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-                  {formError}
+                <div className="p-3.5 rounded-xl bg-rose-100 border-2 border-rose-600 text-rose-950 text-base font-bold flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-rose-800 shrink-0" />
+                  <span>{formError}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Campo con etiqueta visible */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tipo de Evento *
+                  <label 
+                    htmlFor="clin-type"
+                    className="block text-base font-black text-slate-950 mb-1"
+                  >
+                    Tipo de atención médica:
                   </label>
                   <select
+                    id="clin-type"
                     value={type}
                     onChange={(e) => setType(e.target.value as ClinicalRecordType)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                   >
                     <option value="consulta">Consulta Médica</option>
                     <option value="tratamiento">Tratamiento / Medicación</option>
                     <option value="cirugia">Cirugía / Procedimiento</option>
                     <option value="desparasitacion">Desparasitación</option>
-                    <option value="estudio">Estudio / Análisis de laboratorio</option>
+                    <option value="estudio">Estudio o Análisis</option>
                     <option value="urgencia">Urgencia</option>
                   </select>
                 </div>
 
+                {/* Campo con etiqueta visible */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Fecha del Evento *
+                  <label 
+                    htmlFor="clin-date"
+                    className="block text-base font-black text-slate-950 mb-1"
+                  >
+                    Fecha de la visita:
                   </label>
                   <input
+                    id="clin-date"
                     type="date"
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                   />
                 </div>
               </div>
 
+              {/* Campo con etiqueta visible */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Motivo o Título Principal *
+                <label 
+                  htmlFor="clin-title"
+                  className="block text-base font-black text-slate-950 mb-1"
+                >
+                  Motivo de la visita:
                 </label>
                 <input
+                  id="clin-title"
                   type="text"
                   required
                   value={title}
@@ -291,43 +310,58 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                     setTitle(e.target.value);
                     setFormError('');
                   }}
-                  placeholder="Ej: Control de otitis, Limpieza dental, Ecografía..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Por ejemplo: Chequeo dental, Otitis, Control de peso..."
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-bold text-base min-h-[48px]"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Campo con etiqueta visible */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Veterinario/a
+                  <label 
+                    htmlFor="clin-vet"
+                    className="block text-base font-bold text-slate-900 mb-1"
+                  >
+                    Veterinario/a:
                   </label>
                   <input
+                    id="clin-vet"
                     type="text"
                     value={veterinarian}
                     onChange={(e) => setVeterinarian(e.target.value)}
                     placeholder="Dra. Gómez"
-                    className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-400 text-base min-h-[48px]"
                   />
                 </div>
 
+                {/* Campo con etiqueta visible */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Clínica / Hospital
+                  <label 
+                    htmlFor="clin-clinic"
+                    className="block text-base font-bold text-slate-900 mb-1"
+                  >
+                    Clínica u Hospital:
                   </label>
                   <input
+                    id="clin-clinic"
                     type="text"
                     value={clinic}
                     onChange={(e) => setClinic(e.target.value)}
-                    placeholder="Centro Veterinario..."
-                    className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Clínica San Roque"
+                    className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-400 text-base min-h-[48px]"
                   />
                 </div>
 
+                {/* Campo con etiqueta visible */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Peso registrado (kg)
+                  <label 
+                    htmlFor="clin-weight"
+                    className="block text-base font-bold text-slate-900 mb-1"
+                  >
+                    Peso registrado (kg):
                   </label>
                   <input
+                    id="clin-weight"
                     type="number"
                     step="0.1"
                     min="0"
@@ -335,16 +369,21 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                     value={weightKg}
                     onChange={(e) => setWeightKg(e.target.value)}
                     placeholder="Ej: 14.5"
-                    className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                   />
                 </div>
               </div>
 
+              {/* Campo con etiqueta visible */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Diagnóstico y Observaciones Médicas *
+                <label 
+                  htmlFor="clin-diagnosis"
+                  className="block text-base font-black text-slate-950 mb-1"
+                >
+                  Diagnóstico y observaciones del profesional:
                 </label>
                 <textarea
+                  id="clin-diagnosis"
                   required
                   rows={3}
                   value={diagnosisNotes}
@@ -352,73 +391,87 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                     setDiagnosisNotes(e.target.value);
                     setFormError('');
                   }}
-                  placeholder="Detalles del diagnóstico, síntomas observados, recomendaciones del profesional..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
+                  placeholder="Describe qué observó el veterinario y qué indicó hacer..."
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-base text-slate-950 leading-relaxed min-h-[80px]"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Campo con etiqueta visible */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Tratamiento / Fármacos indicados
+                  <label 
+                    htmlFor="clin-treatment"
+                    className="block text-base font-bold text-slate-900 mb-1"
+                  >
+                    Medicamentos o tratamiento recetado:
                   </label>
                   <input
+                    id="clin-treatment"
                     type="text"
                     value={treatment}
                     onChange={(e) => setTreatment(e.target.value)}
-                    placeholder="Ej: Gotas óticas cada 12h x 7 días"
-                    className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Ej: Gotas en oído cada 12 horas por 7 días"
+                    className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-400 text-base min-h-[48px]"
                   />
                 </div>
 
+                {/* Campo con etiqueta visible */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Próximo control / Seguimiento
+                  <label 
+                    htmlFor="clin-followup"
+                    className="block text-base font-bold text-slate-900 mb-1"
+                  >
+                    Fecha del próximo control:
                   </label>
                   <input
+                    id="clin-followup"
                     type="date"
                     value={followUpDate}
                     onChange={(e) => setFollowUpDate(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 flex gap-2">
+              {/* BOTONERA: UN SOLO BOTÓN PRINCIPAL */}
+              <div className="pt-2 flex flex-col sm:flex-row gap-3">
+                {/* Botón secundario */}
                 <button
                   type="button"
                   onClick={() => setIsAddingNew(false)}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
+                  className="w-full sm:w-1/3 py-3.5 px-4 rounded-xl border-2 border-slate-400 bg-white hover:bg-slate-100 text-slate-800 font-bold text-base min-h-[52px]"
                 >
                   Cancelar
                 </button>
+                {/* ÚNICO BOTÓN PRINCIPAL */}
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors shadow-sm inline-flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-2/3 py-3.5 px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
                 >
-                  <Check className="w-4 h-4" />
-                  Guardar en Historial
+                  <Check className="w-6 h-6" />
+                  <span>Guardar en Historial</span>
                 </button>
               </div>
             </form>
           ) : (
-            /* Línea de Tiempo Interactiva */
+            /* LÍNEA DE TIEMPO INTERACTIVA */
             <div>
+              {/* ESTADO VACÍO (Requisito 5: Frase clara que invita a la acción) */}
               {sortedRecords.length === 0 ? (
-                <div className="text-center py-10 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                    <FileText className="w-6 h-6" />
+                <div className="text-center py-8 space-y-3 bg-slate-50 rounded-3xl p-6 border-2 border-slate-300">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-200 text-slate-700 flex items-center justify-center mx-auto">
+                    <FileText className="w-8 h-8" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-800">
+                    <h4 className="text-xl font-black text-slate-950">
                       {searchTerm || selectedType !== 'todos'
-                        ? 'No se encontraron registros con esos filtros'
-                        : 'Aún no hay registros en el historial clínico'}
+                        ? 'No encontramos registros con esos filtros'
+                        : 'El historial clínico está vacío'}
                     </h4>
-                    <p className="text-xs text-slate-500 max-w-xs mx-auto mt-1">
+                    <p className="text-base text-slate-700 max-w-sm mx-auto mt-2 leading-relaxed">
                       {searchTerm || selectedType !== 'todos'
-                        ? 'Prueba cambiando los términos de búsqueda o seleccionando otra categoría.'
-                        : 'Lleva el control de visitas veterinarias, diagnósticos, cirugías y peso de tu mascota.'}
+                        ? 'Prueba borrando la búsqueda o seleccionando "Todos" para ver el historial completo.'
+                        : 'Lleva el registro de las visitas al veterinario, el peso de tu mascota y los tratamientos indicados.'}
                     </p>
                   </div>
                   <button
@@ -427,124 +480,118 @@ export const ClinicalHistoryModal: React.FC<ClinicalHistoryModalProps> = ({
                       setSelectedType('todos');
                       setIsAddingNew(true);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors"
+                    className="w-full sm:w-auto px-6 py-3.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-2xl text-base font-black min-h-[50px] inline-flex items-center justify-center gap-2 shadow-md"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    Registrar primera entrada
+                    <Plus className="w-6 h-6" />
+                    <span>Registrar primera visita veterinaria</span>
                   </button>
                 </div>
               ) : (
-                <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <div className="space-y-4">
                   {sortedRecords.map((rec) => {
                     const typeInfo = TYPE_CONFIG[rec.type] || TYPE_CONFIG.consulta;
                     const IconComponent = typeInfo.icon;
                     const isExpanded = expandedRecordId === rec.id;
 
                     return (
-                      <div key={rec.id} className="relative group">
-                        {/* Nodo en la línea de tiempo */}
-                        <div
-                          className={`absolute -left-6 top-1.5 w-5 h-5 rounded-full border-2 border-white shadow-xs flex items-center justify-center ${typeInfo.bg} ${typeInfo.text}`}
-                        >
-                          <IconComponent className="w-2.5 h-2.5" />
+                      <div
+                        key={rec.id}
+                        className="bg-white rounded-2xl p-4 border-2 border-slate-300 shadow-sm space-y-2.5"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span
+                                className={`text-base font-black px-2.5 py-0.5 rounded-lg border-2 ${typeInfo.bg} ${typeInfo.text} ${typeInfo.border}`}
+                              >
+                                {typeInfo.label}
+                              </span>
+                              <span className="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                                <Calendar className="w-5 h-5 text-slate-600" />
+                                {formatReadableDate(rec.date)}
+                              </span>
+                            </div>
+
+                            <h4 className="text-lg font-black text-slate-950 leading-tight">
+                              {rec.title}
+                            </h4>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`¿Seguro que deseas eliminar la entrada "${rec.title}"?`)) {
+                                onDeleteRecord(pet.id, rec.id);
+                              }
+                            }}
+                            className="text-slate-600 hover:text-rose-700 p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl"
+                            title="Eliminar entrada"
+                            aria-label={`Eliminar registro de ${rec.title}`}
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
                         </div>
 
-                        {/* Tarjeta del Registro */}
-                        <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                <span
-                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeInfo.bg} ${typeInfo.text} ${typeInfo.border}`}
-                                >
-                                  {typeInfo.label}
-                                </span>
-                                <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                                  <Calendar className="w-3 h-3 text-slate-400" />
-                                  {formatReadableDate(rec.date)}
+                        {/* Metadatos: Médico, Clínica, Peso */}
+                        <div className="flex items-center gap-3 text-base text-slate-800 flex-wrap font-medium">
+                          {rec.veterinarian && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <Stethoscope className="w-5 h-5 text-slate-600" />
+                              {rec.veterinarian}
+                            </span>
+                          )}
+                          {rec.clinic && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <MapPin className="w-5 h-5 text-slate-600" />
+                              {rec.clinic}
+                            </span>
+                          )}
+                          {rec.weightKg && (
+                            <span className="inline-flex items-center gap-1.5 font-black text-emerald-950 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300">
+                              <Scale className="w-5 h-5" />
+                              {rec.weightKg} kg
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Diagnóstico */}
+                        <p
+                          className={`text-base text-slate-900 leading-relaxed bg-slate-100 p-3 rounded-xl border border-slate-200 ${
+                            !isExpanded ? 'line-clamp-2' : ''
+                          }`}
+                        >
+                          {rec.diagnosisNotes}
+                        </p>
+
+                        {/* Tratamiento y Próximo Control */}
+                        {(rec.treatment || rec.followUpDate) && (
+                          <div className="pt-1 space-y-1.5 text-base">
+                            {rec.treatment && (
+                              <div className="flex items-start gap-2 text-slate-900">
+                                <Pill className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+                                <span>
+                                  <strong>Tratamiento:</strong> {rec.treatment}
                                 </span>
                               </div>
-
-                              <h4 className="text-sm font-bold text-slate-900 leading-tight">
-                                {rec.title}
-                              </h4>
-                            </div>
-
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`¿Eliminar la entrada "${rec.title}" del historial?`)) {
-                                  onDeleteRecord(pet.id, rec.id);
-                                }
-                              }}
-                              className="text-slate-300 hover:text-rose-500 p-1 transition-colors"
-                              title="Eliminar entrada"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {/* Metadatos: Médico, Clínica, Peso */}
-                          <div className="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
-                            {rec.veterinarian && (
-                              <span className="inline-flex items-center gap-1 font-medium">
-                                <Stethoscope className="w-3 h-3 text-slate-400" />
-                                {rec.veterinarian}
-                              </span>
                             )}
-                            {rec.clinic && (
-                              <span className="inline-flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-slate-400" />
-                                {rec.clinic}
-                              </span>
-                            )}
-                            {rec.weightKg && (
-                              <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                                <Scale className="w-3 h-3" />
-                                {rec.weightKg} kg
-                              </span>
+
+                            {rec.followUpDate && (
+                              <div className="flex items-center gap-2 text-amber-950 bg-amber-100 px-3 py-1.5 rounded-xl border border-amber-300 text-base font-bold">
+                                <Clock className="w-5 h-5 text-amber-800" />
+                                <span>Próximo control: {formatReadableDate(rec.followUpDate)}</span>
+                              </div>
                             )}
                           </div>
+                        )}
 
-                          {/* Diagnóstico */}
-                          <p
-                            className={`text-xs text-slate-700 leading-relaxed bg-slate-50 p-2.5 rounded-xl ${
-                              !isExpanded ? 'line-clamp-2' : ''
-                            }`}
+                        {rec.diagnosisNotes.length > 80 && (
+                          <button
+                            onClick={() => setExpandedRecordId(isExpanded ? null : rec.id)}
+                            className="text-base font-bold text-slate-800 hover:text-slate-950 inline-flex items-center gap-1 pt-1 min-h-[44px]"
                           >
-                            {rec.diagnosisNotes}
-                          </p>
-
-                          {/* Tratamiento y Próximo Control */}
-                          {(rec.treatment || rec.followUpDate) && (
-                            <div className="pt-1 space-y-1 text-xs">
-                              {rec.treatment && (
-                                <div className="flex items-start gap-1.5 text-slate-700">
-                                  <Pill className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                                  <span>
-                                    <strong>Tratamiento:</strong> {rec.treatment}
-                                  </span>
-                                </div>
-                              )}
-
-                              {rec.followUpDate && (
-                                <div className="flex items-center gap-1.5 text-amber-800 bg-amber-50/80 px-2 py-1 rounded-lg text-[11px] font-semibold">
-                                  <Clock className="w-3 h-3 text-amber-600" />
-                                  <span>Próximo control: {formatReadableDate(rec.followUpDate)}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {rec.diagnosisNotes.length > 100 && (
-                            <button
-                              onClick={() => setExpandedRecordId(isExpanded ? null : rec.id)}
-                              className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 inline-flex items-center gap-0.5 pt-0.5"
-                            >
-                              <span>{isExpanded ? 'Ver menos' : 'Ver detalle completo'}</span>
-                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            </button>
-                          )}
-                        </div>
+                            <span>{isExpanded ? 'Ver menos' : 'Leer detalle completo'}</span>
+                            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                          </button>
+                        )}
                       </div>
                     );
                   })}

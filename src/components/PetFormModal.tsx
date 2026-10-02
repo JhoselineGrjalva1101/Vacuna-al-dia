@@ -10,11 +10,10 @@ import {
   X, 
   Plus, 
   Trash2, 
-  Calendar, 
   Check, 
   Clock, 
-  Syringe, 
-  Info 
+  Syringe,
+  AlertCircle
 } from 'lucide-react';
 
 interface PetFormModalProps {
@@ -32,27 +31,17 @@ interface DraftVaccine {
   notes?: string;
 }
 
-/**
- * FUNCIÓN 1 REQUERIDA: Registrar mascota con especie, edad y vacunas aplicadas.
- * 
- * Permite capturar los datos requeridos por la consigna:
- * - Especie (Perro, Gato, u Otro)
- * - Edad (años y meses)
- * - Vacunas aplicadas con cálculo automático de la próxima dosis (Función 2)
- */
 export const PetFormModal: React.FC<PetFormModalProps> = ({
   isOpen,
   onClose,
   onSavePet,
 }) => {
-  // Estado básico de la mascota
   const [name, setName] = useState('');
   const [species, setSpecies] = useState<PetSpecies>('perro');
   const [customSpecies, setCustomSpecies] = useState('');
   const [ageYears, setAgeYears] = useState<number>(2);
   const [ageMonths, setAgeMonths] = useState<number>(0);
 
-  // Lista de vacunas que se registrarán junto con la mascota
   const todayStr = formatLocalDateToInput(new Date());
   const [draftVaccines, setDraftVaccines] = useState<DraftVaccine[]>([
     {
@@ -65,12 +54,10 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
     },
   ]);
 
-  // Mensaje de error para validaciones
   const [errorMessage, setErrorMessage] = useState('');
 
   if (!isOpen) return null;
 
-  // Manejador para agregar una nueva fila de vacuna al borrador
   const handleAddVaccineRow = () => {
     setDraftVaccines((prev) => [
       ...prev,
@@ -85,12 +72,10 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
     ]);
   };
 
-  // Manejador para eliminar una fila de vacuna del borrador
   const handleRemoveVaccineRow = (id: string) => {
     setDraftVaccines((prev) => prev.filter((v) => v.id !== id));
   };
 
-  // Manejador para actualizar un campo de una vacuna específica
   const handleUpdateVaccine = (
     id: string,
     field: keyof DraftVaccine,
@@ -101,7 +86,6 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
     );
   };
 
-  // Aplicar plantilla rápida de vacuna sugerida
   const handleSelectTemplate = (templateName: string, intervalValue: number, intervalUnit: VaccineFrequencyUnit) => {
     setDraftVaccines((prev) => [
       ...prev,
@@ -116,26 +100,22 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
     ]);
   };
 
-  // Guardar y validar
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) {
-      setErrorMessage('Por favor ingresa el nombre de la mascota.');
+      setErrorMessage('Por favor, escribe el nombre de la mascota antes de guardar.');
       return;
     }
 
     if (species === 'otro' && !customSpecies.trim()) {
-      setErrorMessage('Por favor especifica la especie de la mascota.');
+      setErrorMessage('Por favor, indica qué tipo de animal es tu mascota (por ejemplo: Conejo, Hurón).');
       return;
     }
 
-    // Filtrar vacunas válidas (que tengan nombre)
     const validVaccines: Vaccine[] = draftVaccines
       .filter((v) => v.name.trim().length > 0)
       .map((v) => {
-        // ⚠️ TRAMPA HABITUAL:
-        // Asegurarse de que el cálculo de la próxima dosis se ejecute con tipos numéricos limpios.
         const cleanInterval = Math.max(1, Number(v.intervalValue) || 12);
         const calculatedNextDose = calculateNextDoseDate(
           v.applicationDate || todayStr,
@@ -173,39 +153,50 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
   const templatesForSpecies = COMMON_VACCINE_TEMPLATES[species] || COMMON_VACCINE_TEMPLATES.otro;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] flex flex-col animate-in fade-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[94vh] flex flex-col border-2 border-slate-400 animate-in fade-in duration-150">
+        
         {/* Cabecera del Modal */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+        <div className="px-5 py-4 border-b-2 border-slate-200 flex items-center justify-between shrink-0 bg-slate-50">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Registrar Mascota</h2>
-            <p className="text-xs text-slate-500">
-              Registra a tu peludo y sus vacunas aplicadas
+            <h2 className="text-xl font-black text-slate-950">Registrar Mascota</h2>
+            <p className="text-base text-slate-700">
+              Datos básicos y primeras vacunas
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            className="p-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-200 min-h-[48px] min-w-[48px] flex items-center justify-center"
+            aria-label="Cerrar ventana"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Contenido con Scroll */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-5 space-y-5">
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-6 space-y-5">
+          
+          {/* Mensaje de error visible en español claro (Requisito 6) */}
           {errorMessage && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-              {errorMessage}
+            <div className="p-4 rounded-2xl bg-rose-100 border-2 border-rose-600 text-rose-950 text-base font-bold flex items-center gap-2">
+              <AlertCircle className="w-6 h-6 text-rose-800 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
 
-          {/* 1. Datos Básicos */}
-          <div className="space-y-3">
+          {/* 1. Datos Básicos con ETIQUETAS VISIBLES (Requisito 3) */}
+          <div className="space-y-4">
+            
+            {/* Campo: Nombre con etiqueta visible */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Nombre de la Mascota *
+              <label 
+                htmlFor="pet-name-input"
+                className="block text-base font-black text-slate-950 mb-1"
+              >
+                Nombre de la mascota:
               </label>
               <input
+                id="pet-name-input"
                 type="text"
                 required
                 value={name}
@@ -213,149 +204,161 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                   setName(e.target.value);
                   setErrorMessage('');
                 }}
-                placeholder="Ej: Toby, Luna, Simón..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium"
+                placeholder="Por ejemplo: Toby, Luna, Simón..."
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-bold text-base focus:outline-none focus:border-emerald-700 min-h-[48px]"
               />
             </div>
 
-            {/* Especie */}
+            {/* Campo: Especie con etiqueta visible */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Especie *
+              <label className="block text-base font-black text-slate-950 mb-1.5">
+                Especie del animal:
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setSpecies('perro')}
-                  className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                  className={`py-3 px-2 rounded-xl border-2 text-center transition-all flex flex-col items-center justify-center min-h-[56px] ${
                     species === 'perro'
-                      ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 text-emerald-900'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                      ? 'bg-emerald-100 border-emerald-900 ring-2 ring-emerald-800 text-emerald-950'
+                      : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="text-xl">🐶</span>
-                  <span className="text-xs font-bold">Perro</span>
+                  <span className="text-2xl">🐶</span>
+                  <span className="text-base font-bold">Perro</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSpecies('gato')}
-                  className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                  className={`py-3 px-2 rounded-xl border-2 text-center transition-all flex flex-col items-center justify-center min-h-[56px] ${
                     species === 'gato'
-                      ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 text-emerald-900'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                      ? 'bg-emerald-100 border-emerald-900 ring-2 ring-emerald-800 text-emerald-950'
+                      : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="text-xl">🐱</span>
-                  <span className="text-xs font-bold">Gato</span>
+                  <span className="text-2xl">🐱</span>
+                  <span className="text-base font-bold">Gato</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSpecies('otro')}
-                  className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                  className={`py-3 px-2 rounded-xl border-2 text-center transition-all flex flex-col items-center justify-center min-h-[56px] ${
                     species === 'otro'
-                      ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 text-emerald-900'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                      ? 'bg-emerald-100 border-emerald-900 ring-2 ring-emerald-800 text-emerald-950'
+                      : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="text-xl">🐾</span>
-                  <span className="text-xs font-bold">Otro</span>
+                  <span className="text-2xl">🐾</span>
+                  <span className="text-base font-bold">Otro</span>
                 </button>
               </div>
 
               {species === 'otro' && (
-                <input
-                  type="text"
-                  value={customSpecies}
-                  onChange={(e) => setCustomSpecies(e.target.value)}
-                  placeholder="Especifica (ej: Conejo, Hurón...)"
-                  className="mt-2 w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <div className="mt-2">
+                  <label 
+                    htmlFor="custom-species-input"
+                    className="block text-base font-bold text-slate-900 mb-1"
+                  >
+                    Especifica la especie:
+                  </label>
+                  <input
+                    id="custom-species-input"
+                    type="text"
+                    value={customSpecies}
+                    onChange={(e) => setCustomSpecies(e.target.value)}
+                    placeholder="Por ejemplo: Conejo, Hurón, Cobayo..."
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-semibold text-base focus:outline-none focus:border-emerald-700 min-h-[48px]"
+                  />
+                </div>
               )}
             </div>
 
-            {/* Edad */}
+            {/* Campo: Edad con etiquetas visibles */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Edad Aproximada *
+              <label className="block text-base font-black text-slate-950 mb-1">
+                Edad aproximada:
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      max="30"
-                      value={ageYears}
-                      onChange={(e) => setAgeYears(parseInt(e.target.value, 10) || 0)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                    />
-                    <span className="text-xs font-medium text-slate-600">años</span>
-                  </div>
+                  <label htmlFor="pet-age-years" className="block text-base font-semibold text-slate-700 mb-1">
+                    Años cumplidos:
+                  </label>
+                  <input
+                    id="pet-age-years"
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={ageYears}
+                    onChange={(e) => setAgeYears(parseInt(e.target.value, 10) || 0)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
+                  />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      max="11"
-                      value={ageMonths}
-                      onChange={(e) => setAgeMonths(parseInt(e.target.value, 10) || 0)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
-                    />
-                    <span className="text-xs font-medium text-slate-600">meses</span>
-                  </div>
+                  <label htmlFor="pet-age-months" className="block text-base font-semibold text-slate-700 mb-1">
+                    Meses adicionales:
+                  </label>
+                  <input
+                    id="pet-age-months"
+                    type="number"
+                    min="0"
+                    max="11"
+                    value={ageMonths}
+                    onChange={(e) => setAgeMonths(parseInt(e.target.value, 10) || 0)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 2. Vacunas Aplicadas */}
-          <div className="pt-3 border-t border-slate-200">
-            <div className="flex items-center justify-between mb-2">
+          {/* 2. Vacunas Aplicadas con etiquetas visibles */}
+          <div className="pt-4 border-t-2 border-slate-200 space-y-3">
+            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                  Vacunas Aplicadas
+                <h3 className="text-lg font-black text-slate-950">
+                  Vacunas aplicadas:
                 </h3>
-                <p className="text-[11px] text-slate-500">
-                  La próxima dosis se calcula automáticamente
+                <p className="text-base text-slate-700">
+                  Calculamos la fecha de la próxima dosis al instante
                 </p>
               </div>
+
+              {/* Botón secundario para agregar fila */}
               <button
                 type="button"
                 onClick={handleAddVaccineRow}
-                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border-2 border-slate-700 bg-white hover:bg-slate-100 text-slate-900 font-bold text-base min-h-[48px]"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Nueva vacuna
+                <Plus className="w-5 h-5" />
+                <span>+ Agregar otra</span>
               </button>
             </div>
 
-            {/* Sugerencias Rápidas de Vacunas */}
-            <div className="mb-3">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">
-                Sugerencias comunes para {species === 'perro' ? 'perros' : species === 'gato' ? 'gatos' : 'mascotas'}:
+            {/* Sugerencias Rápidas */}
+            <div>
+              <span className="block text-base font-bold text-slate-800 mb-1">
+                Elegir sugerencia común:
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {templatesForSpecies.map((tmpl) => (
                   <button
                     key={tmpl.name}
                     type="button"
                     onClick={() => handleSelectTemplate(tmpl.name, tmpl.intervalValue, tmpl.intervalUnit)}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200 transition-colors inline-flex items-center gap-1"
+                    className="text-base px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-400 text-slate-900 font-semibold min-h-[48px] inline-flex items-center gap-1.5"
                   >
-                    <Plus className="w-2.5 h-2.5" />
+                    <Plus className="w-4 h-4 text-emerald-800" />
                     <span>{tmpl.name}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Lista de Filas de Vacunas */}
-            <div className="space-y-3">
+            {/* Lista de Filas de Vacunas con Etiquetas */}
+            <div className="space-y-4">
               {draftVaccines.map((v, index) => {
-                // Cálculo en tiempo real de la próxima dosis
                 const calculatedNext = calculateNextDoseDate(
                   v.applicationDate || todayStr,
                   Number(v.intervalValue) || 12,
@@ -365,69 +368,75 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                 return (
                   <div
                     key={v.id}
-                    className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2.5 relative"
+                    className="p-4 rounded-2xl bg-slate-50 border-2 border-slate-300 space-y-3"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                        <Syringe className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-base font-black text-slate-900 flex items-center gap-1.5">
+                        <Syringe className="w-5 h-5 text-emerald-800" />
                         Vacuna #{index + 1}
                       </span>
                       {draftVaccines.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveVaccineRow(v.id)}
-                          className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
-                          title="Eliminar de la lista"
+                          className="text-slate-600 hover:text-rose-700 p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl"
+                          title="Eliminar esta vacuna"
+                          aria-label={`Eliminar vacuna número ${index + 1}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       )}
                     </div>
 
-                    {/* Nombre */}
+                    {/* Nombre con etiqueta visible */}
                     <div>
+                      <label 
+                        htmlFor={`vac-name-${v.id}`}
+                        className="block text-base font-bold text-slate-900 mb-1"
+                      >
+                        Nombre de la vacuna:
+                      </label>
                       <input
+                        id={`vac-name-${v.id}`}
                         type="text"
                         required
                         value={v.name}
-                        onChange={(e) =>
-                          handleUpdateVaccine(v.id, 'name', e.target.value)
-                        }
-                        placeholder="Nombre de la vacuna (ej: Antirrábica, Séxtuple...)"
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        onChange={(e) => handleUpdateVaccine(v.id, 'name', e.target.value)}
+                        placeholder="Por ejemplo: Antirrábica, Séxtuple..."
+                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-bold text-base min-h-[48px]"
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {/* Fecha de Aplicación */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Fecha de Aplicación con etiqueta visible */}
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
-                          Fecha de aplicación:
+                        <label 
+                          htmlFor={`vac-date-${v.id}`}
+                          className="block text-base font-bold text-slate-900 mb-1"
+                        >
+                          Fecha en que se aplicó:
                         </label>
-                        <div className="relative">
-                          <input
-                            type="date"
-                            required
-                            value={v.applicationDate}
-                            onChange={(e) =>
-                              handleUpdateVaccine(
-                                v.id,
-                                'applicationDate',
-                                e.target.value
-                              )
-                            }
-                            className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
-                        </div>
+                        <input
+                          id={`vac-date-${v.id}`}
+                          type="date"
+                          required
+                          value={v.applicationDate}
+                          onChange={(e) => handleUpdateVaccine(v.id, 'applicationDate', e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-slate-400 text-slate-950 font-bold text-base min-h-[48px]"
+                        />
                       </div>
 
-                      {/* Intervalo / Frecuencia */}
+                      {/* Intervalo con etiqueta visible */}
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
-                          Frecuencia de refuerzo:
+                        <label 
+                          htmlFor={`vac-interval-${v.id}`}
+                          className="block text-base font-bold text-slate-900 mb-1"
+                        >
+                          Repetir dosis cada:
                         </label>
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-2">
                           <input
+                            id={`vac-interval-${v.id}`}
                             type="number"
                             min="1"
                             max="365"
@@ -439,9 +448,11 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                                 parseInt(e.target.value, 10) || 1
                               )
                             }
-                            className="w-16 px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            className="w-20 px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                           />
                           <select
+                            id={`vac-unit-${v.id}`}
+                            aria-label="Unidad de tiempo para la dosis"
                             value={v.intervalUnit}
                             onChange={(e) =>
                               handleUpdateVaccine(
@@ -450,7 +461,7 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                                 e.target.value as VaccineFrequencyUnit
                               )
                             }
-                            className="flex-1 px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            className="flex-1 px-3 py-3 rounded-xl border-2 border-slate-400 text-base font-bold min-h-[48px]"
                           >
                             <option value="meses">Meses (habitual: 12)</option>
                             <option value="dias">Días (ej: 21 cachorro)</option>
@@ -460,12 +471,11 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
                       </div>
                     </div>
 
-                    {/* VISTA EN VIVO DEL CÁLCULO DE LA PRÓXIMA DOSIS (Función 2) */}
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200/70 text-[11px] text-emerald-800">
-                      <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    {/* Próxima Dosis Calculada */}
+                    <div className="p-3 rounded-xl bg-emerald-100 border-2 border-emerald-400 text-base text-emerald-950 font-bold flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-emerald-900 shrink-0" />
                       <span>
-                        Próxima dosis calculada:{' '}
-                        <strong>{formatReadableDate(calculatedNext)}</strong>
+                        Próxima dosis calculada: <strong>{formatReadableDate(calculatedNext)}</strong>
                       </span>
                     </div>
                   </div>
@@ -474,21 +484,24 @@ export const PetFormModal: React.FC<PetFormModalProps> = ({
             </div>
           </div>
 
-          {/* Botones de Acción */}
-          <div className="pt-2 flex gap-2">
+          {/* BOTONERA: UN SOLO BOTÓN PRINCIPAL (Requisito 4) */}
+          <div className="pt-3 flex flex-col sm:flex-row gap-3">
+            {/* Botón secundario */}
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 px-4 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
+              className="w-full sm:w-1/3 py-3.5 px-4 rounded-xl border-2 border-slate-400 bg-white hover:bg-slate-100 text-slate-800 font-bold text-base min-h-[52px]"
             >
               Cancelar
             </button>
+
+            {/* ÚNICO BOTÓN PRINCIPAL */}
             <button
               type="submit"
-              className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors shadow-sm inline-flex items-center justify-center gap-1.5"
+              className="w-full sm:w-2/3 py-3.5 px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 text-white font-black text-lg shadow-md min-h-[52px] inline-flex items-center justify-center gap-2"
             >
-              <Check className="w-4 h-4" />
-              Guardar Mascota
+              <Check className="w-6 h-6" />
+              <span>Guardar Mascota</span>
             </button>
           </div>
         </form>
