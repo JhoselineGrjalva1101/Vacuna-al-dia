@@ -1,0 +1,6 @@
+{
+  "name": "Vacuna al Día",
+  "description": "Control de vacunas para mascotas con cálculo automático de próximas dosis y alertas de vencimiento.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
