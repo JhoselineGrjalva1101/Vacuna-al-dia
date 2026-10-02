@@ -26,10 +26,32 @@ export interface Pet {
   ageMonths: number;
   photoEmoji?: string;
   vaccines: Vaccine[];
+  clinicalRecords?: ClinicalRecord[];
   createdAt: string;
 }
 
 export type VaccineUrgency = 'vencida' | 'por_vencer' | 'al_dia';
+
+export type ClinicalRecordType = 
+  | 'consulta' 
+  | 'tratamiento' 
+  | 'cirugia' 
+  | 'desparasitacion' 
+  | 'estudio' 
+  | 'urgencia';
+
+export interface ClinicalRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  type: ClinicalRecordType;
+  title: string;
+  veterinarian?: string;
+  clinic?: string;
+  weightKg?: number;
+  diagnosisNotes: string;
+  treatment?: string;
+  followUpDate?: string;
+}
 
 export interface VaccineAlertItem {
   petId: string;
@@ -39,3 +61,4 @@ export interface VaccineAlertItem {
   urgency: VaccineUrgency;
   daysRemaining: number; // Negativo si ya venció
 }
+

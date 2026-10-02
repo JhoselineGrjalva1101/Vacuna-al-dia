@@ -67,6 +67,31 @@ export const INITIAL_PETS: Pet[] = [
         nextDoseDate: calculateNextDoseDate('2026-06-05', 12, 'meses'),
         notes: 'Aplicada antes de entrar a guardería canina'
       }
+    ],
+    clinicalRecords: [
+      {
+        id: 'rec-1',
+        date: '2026-08-14',
+        type: 'consulta',
+        title: 'Control general y chequeo dental',
+        veterinarian: 'Dra. Mariana López',
+        clinic: 'Veterinaria Central',
+        weightKg: 14.2,
+        diagnosisNotes: 'Paciente en excelente condición corporal. Ligero sarro en molares superiores pero sin inflamación gingival. Se recomienda snack dental preventivo.',
+        treatment: 'Higiene bucal preventiva semanal',
+        followUpDate: '2027-02-14'
+      },
+      {
+        id: 'rec-2',
+        date: '2026-05-10',
+        type: 'desparasitacion',
+        title: 'Desparasitación interna trimestral',
+        veterinarian: 'Dr. Lucas Gómez',
+        clinic: 'Veterinaria Central',
+        weightKg: 14.0,
+        diagnosisNotes: 'Administración de comprimido antiparasitario de amplio espectro.',
+        treatment: 'Comprimido antiparasitario dosis única'
+      }
     ]
   },
   {
@@ -95,6 +120,19 @@ export const INITIAL_PETS: Pet[] = [
         intervalUnit: 'meses',
         nextDoseDate: calculateNextDoseDate('2026-04-12', 12, 'meses'),
         notes: 'Dosis única anual'
+      }
+    ],
+    clinicalRecords: [
+      {
+        id: 'rec-3',
+        date: '2026-04-12',
+        type: 'consulta',
+        title: 'Chequeo anual y castración preventiva',
+        veterinarian: 'Dra. Andrea Ruiz',
+        clinic: 'Clínica Felina San Francisco',
+        weightKg: 4.1,
+        diagnosisNotes: 'Castración previa cicatrizada perfectamente. Vacunación anual al día.',
+        treatment: 'Alimento castrados para control de peso'
       }
     ]
   }

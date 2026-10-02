@@ -16,7 +16,8 @@ import {
   CheckCircle2, 
   Calendar,
   Clock,
-  Syringe
+  Syringe,
+  FileText
 } from 'lucide-react';
 
 interface PetCardProps {
@@ -24,6 +25,7 @@ interface PetCardProps {
   onAddVaccine: (petId: string) => void;
   onDeletePet: (petId: string) => void;
   onDeleteVaccine: (petId: string, vaccineId: string) => void;
+  onOpenClinicalHistory: (pet: Pet) => void;
 }
 
 export const PetCard: React.FC<PetCardProps> = ({
@@ -31,6 +33,7 @@ export const PetCard: React.FC<PetCardProps> = ({
   onAddVaccine,
   onDeletePet,
   onDeleteVaccine,
+  onOpenClinicalHistory,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -124,7 +127,18 @@ export const PetCard: React.FC<PetCardProps> = ({
             </span>
           )}
 
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              onClick={() => onOpenClinicalHistory(pet)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+              title="Ver o agregar al historial clínico digital"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Historial</span>
+              <span className="bg-blue-200/80 text-blue-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                {pet.clinicalRecords?.length || 0}
+              </span>
+            </button>
             <button
               onClick={() => onAddVaccine(pet.id)}
               className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"

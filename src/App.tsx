@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Pet, Vaccine } from './types/pet';
+import { Pet, Vaccine, ClinicalRecord } from './types/pet';
 import { INITIAL_PETS } from './data/initialData';
 import { calculateNextDoseDate } from './utils/dateCalculations';
 import { VaccineListAlerts } from './components/VaccineListAlerts';
 import { PetCard } from './components/PetCard';
 import { PetFormModal } from './components/PetFormModal';
 import { AddVaccineModal } from './components/AddVaccineModal';
+import { ClinicalHistoryModal } from './components/ClinicalHistoryModal';
 import { 
   Bell, 
   Plus, 
@@ -52,6 +53,7 @@ export default function App() {
   // Modales
   const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
   const [selectedPetForVaccine, setSelectedPetForVaccine] = useState<Pet | null>(null);
+  const [selectedPetForHistory, setSelectedPetForHistory] = useState<Pet | null>(null);
 
   // -------------------------------------------------------------
   // ACCIONES CRUD PARA CUMPLIR CON LAS 3 FUNCIONES
@@ -72,6 +74,34 @@ export default function App() {
     if (confirmDelete) {
       setPets((prev) => prev.filter((p) => p.id !== petId));
     }
+  };
+
+  // Agregar entrada al Historial Clínico Digital
+  const handleAddClinicalRecord = (petId: string, record: ClinicalRecord) => {
+    setPets((prev) =>
+      prev.map((pet) => {
+        if (pet.id !== petId) return pet;
+        const currentRecords = pet.clinicalRecords || [];
+        return {
+          ...pet,
+          clinicalRecords: [record, ...currentRecords],
+        };
+      })
+    );
+  };
+
+  // Eliminar entrada del Historial Clínico Digital
+  const handleDeleteClinicalRecord = (petId: string, recordId: string) => {
+    setPets((prev) =>
+      prev.map((pet) => {
+        if (pet.id !== petId) return pet;
+        const currentRecords = pet.clinicalRecords || [];
+        return {
+          ...pet,
+          clinicalRecords: currentRecords.filter((r) => r.id !== recordId),
+        };
+      })
+    );
   };
 
   // Añadir una vacuna a una mascota existente
@@ -292,6 +322,7 @@ export default function App() {
                     onAddVaccine={() => setSelectedPetForVaccine(pet)}
                     onDeletePet={handleDeletePet}
                     onDeleteVaccine={handleDeleteVaccine}
+                    onOpenClinicalHistory={(p) => setSelectedPetForHistory(p)}
                   />
                 ))}
               </div>
@@ -324,6 +355,15 @@ export default function App() {
         pet={selectedPetForVaccine}
         onClose={() => setSelectedPetForVaccine(null)}
         onAddVaccine={handleAddVaccineToPet}
+      />
+
+      {/* Modal del Historial Clínico Digital Interactivo */}
+      <ClinicalHistoryModal
+        isOpen={Boolean(selectedPetForHistory)}
+        pet={selectedPetForHistory ? pets.find((p) => p.id === selectedPetForHistory.id) || null : null}
+        onClose={() => setSelectedPetForHistory(null)}
+        onAddRecord={handleAddClinicalRecord}
+        onDeleteRecord={handleDeleteClinicalRecord}
       />
     </div>
   );
